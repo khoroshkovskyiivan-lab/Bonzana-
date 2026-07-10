@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './ContestsPage.css';
+
 
 export default function ContestsPage() {
   // Время в секундах до конца лотереи (например, 2 часа 14 минут 45 секунд)
