@@ -1,147 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import './index.css';
+import React, { useState } from 'react';
 import CasesPage from './pages/CasesPage';
-import ContestsPage from './pages/ContestsPage';
-import LeadersPage from './pages/LeadersPage';
+import './index.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('cases');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDepositOpen, setIsDepositOpen] = useState(false); // Окно пополнения
-  
-  const [balance, setBalance] = useState(500);
-  const [tickets, setTickets] = useState(10);
-  const [username, setUsername] = useState('ukrop');
-  const [avatar, setAvatar] = useState('');
-
-  useEffect(() => {
-    if (window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.expand();
-      tg.ready();
-      
-      if (tg.initDataUnsafe?.user) {
-        const u = tg.initDataUnsafe.user;
-        setUsername(u.username || u.first_name || 'ukrop');
-        setAvatar(u.photo_url || '');
-      }
-    }
-  }, []);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [balance, setBalance] = useState(0); // Стартуем с нуля, чтобы сразу проверить окно пополнения
+  const [isDemo, setIsDemo] = useState(false);
 
   return (
-    <div className="app-container">
+    <div className="app-shell">
       {/* ХЕДЕР */}
-      <header className="main-header">
-        <div className="header-left" onClick={() => setIsMenuOpen(true)}>
-          <div className="burger-icon"><span></span><span></span><span></span></div>
-          {/* Логотип Bonzana вместо жабы */}
-          <div className="brand-logo">
-            <span className="logo-box-icon">🎁</span> BONZANA
+      <header className="tg-header">
+        <div className="header-left-brand">
+          <div className="burger-btn">
+            <span></span><span></span><span></span>
           </div>
+          <span className="brand-title">BONZANA</span>
         </div>
-        <div className="header-right">
-          <div className="stars-pill" onClick={() => setIsDepositOpen(true)}>
-            <span className="star-icon">⭐</span>
-            <span className="balance-num">{balance}</span>
-            <button className="plus-btn">+</button>
+        <div className="header-right-wallet">
+          <div className="balance-pill" onClick={() => setIsDepositOpen(true)}>
+            <span className="pill-star">★</span>
+            <span className="pill-amount">{isDemo ? '9999' : balance}</span>
+            <span className="pill-plus">+</span>
           </div>
-          <div className="avatar-box">
-            {avatar ? <img src={avatar} alt="avatar" /> : username[0]?.toUpperCase()}
-          </div>
+          <div className="profile-sub-avatar">U</div>
         </div>
       </header>
 
-      {/* ШТОРКА МЕНЮ */}
-      <div className={`side-drawer ${isMenuOpen ? 'open' : ''}`}>
-        <div className="drawer-overlay" onClick={() => setIsMenuOpen(false)}></div>
-        <div className="drawer-content">
-          <div className="drawer-profile">
-            <div className="drawer-avatar">
-              {avatar ? <img src={avatar} alt="avatar" /> : username[0]?.toUpperCase()}
-            </div>
-            <div>
-              <h3>{username}</h3>
-              <p>ID: 7207936626</p>
-            </div>
-          </div>
-          <div className="drawer-balance-card">
-            <p>Мой баланс</p>
-            <div className="balances-row">
-              <div>⭐ {balance}</div>
-              <div style={{color: '#8e99b3'}}>🎟️ {tickets}</div>
-            </div>
-            <button className="deposit-btn" onClick={() => { setIsDepositOpen(true); setIsMenuOpen(false); }}>Пополнить</button>
-          </div>
-          <nav className="drawer-nav">
-            <button onClick={() => { setActiveTab('leaderboard'); setIsMenuOpen(false); }}>👤 Мой профиль</button>
-            <button onClick={() => alert('В разработке')}>🔄 Live-трейды</button>
-            <button onClick={() => { setIsDepositOpen(true); setIsMenuOpen(false); }}>⭐ Купить Stars</button>
-            <button onClick={() => { setActiveTab('leaderboard'); setIsMenuOpen(false); }}>🏆 Лидерборд</button>
-          </nav>
-          <div className="drawer-footer">🎧 Поддержка</div>
-        </div>
-      </div>
-
-      {/* ОКНО ПОПОЛНЕНИЯ БАЛАНСА */}
-      {isDepositOpen && (
-        <div className="modal-overlay" onClick={() => setIsDepositOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Пополнение Telegram Stars</h3>
-              <button className="close-modal-btn" onClick={() => setIsDepositOpen(false)}>×</button>
-            </div>
-            <p className="modal-desc">Выберите пакет звёзд для мгновенного зачисления на игровой баланс:</p>
-            <div className="deposit-grid">
-              <div className="deposit-tier" onClick={() => { setBalance(b => b + 50); setIsDepositOpen(false); }}>
-                <span className="tier-stars">⭐ 50</span>
-                <button className="tier-buy-btn">0.99$</button>
-              </div>
-              <div className="deposit-tier popular" onClick={() => { setBalance(b => b + 250); setIsDepositOpen(false); }}>
-                <div className="badge">ХИТ</div>
-                <span className="tier-stars">⭐ 250</span>
-                <button className="tier-buy-btn">4.99$</button>
-              </div>
-              <div className="deposit-tier" onClick={() => { setBalance(b => b + 1000); setIsDepositOpen(false); }}>
-                <span className="tier-stars">⭐ 1000</span>
-                <button className="tier-buy-btn">19.99$</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* КОНТЕНТ СТРАНИЦ */}
-      <main className="main-content">
+      {/* ОСНОВНОЙ КОНТЕНТ */}
+      <main className="content-area">
         {activeTab === 'cases' && (
-          <CasesPage balance={balance} setBalance={setBalance} />
+          <CasesPage 
+            balance={balance} 
+            setBalance={setBalance} 
+            openDepositModal={() => setIsDepositOpen(true)}
+            isDemo={isDemo}
+            setIsDemo={setIsDemo}
+          />
         )}
-        {activeTab === 'contests' && <ContestsPage />}
-        {activeTab === 'leaderboard' && <LeadersPage />}
-        {(activeTab === 'upgrade' || activeTab === 'crafts') && (
-          <div className="empty-state">
-            <h2>Раздел в разработке</h2>
-            <p>Синхронизация предметов...</p>
-          </div>
+        {activeTab !== 'cases' && (
+          <div className="empty-tab-stub">Раздел в разработке</div>
         )}
       </main>
 
-      {/* ТАБ-БАР (Друзья изменены на Топ) */}
-      <nav className="bottom-tabbar">
-        <button className={`tab-item ${activeTab === 'upgrade' ? 'active' : ''}`} onClick={() => setActiveTab('upgrade')}>
-          <span className="tab-icon">▲</span><span>Апгрейд</span>
+      {/* НАТИВНЫЙ BOTTOM SHEET (ОКНО ПОПОЛНЕНИЯ ИЗ ФОТО 2) */}
+      <div className={`bottom-sheet-overlay ${isDepositOpen ? 'visible' : ''}`} onClick={() => setIsDepositOpen(false)}>
+        <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-header">
+            <h3>Пополнение Telegram Stars</h3>
+            <button className="sheet-close-x" onClick={() => setIsDepositOpen(false)}>×</button>
+          </div>
+          <p className="sheet-subtitle">
+            Выберите пакет звёзд для мгновенного зачисления на игровой баланс:
+          </p>
+
+          <div className="tiers-list">
+            {/* Пакет 1 */}
+            <div className="tier-row" onClick={() => { setBalance(b => b + 50); setIsDepositOpen(false); }}>
+              <div className="tier-info">
+                <span className="tier-star-icon">★</span>
+                <span className="tier-quantity">50</span>
+              </div>
+              <button className="tier-price-btn">0.99$</button>
+            </div>
+
+            {/* Пакет 2 (ХИТ) */}
+            <div className="tier-row popular-row" onClick={() => { setBalance(b => b + 250); setIsDepositOpen(false); }}>
+              <div className="hit-badge">ХИТ</div>
+              <div className="tier-info">
+                <span className="tier-star-icon">★</span>
+                <span className="tier-quantity">250</span>
+              </div>
+              <button className="tier-price-btn">4.99$</button>
+            </div>
+
+            {/* Пакет 3 */}
+            <div className="tier-row" onClick={() => { setBalance(b => b + 1000); setIsDepositOpen(false); }}>
+              <div className="tier-info">
+                <span className="tier-star-icon">★</span>
+                <span className="tier-quantity">1000</span>
+              </div>
+              <button className="tier-price-btn">19.99$</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ОРИГИНАЛЬНЫЙ ТАББАР С КРУГЛОЙ ПОДСВЕТКОЙ ДЛЯ КЕЙСОВ */}
+      <nav className="tg-navbar">
+        <button className={`nav-item ${activeTab === 'upgrade' ? 'active' : ''}`} onClick={() => setActiveTab('upgrade')}>
+          <span className="nav-icon">▲</span>
+          <span className="nav-text">Апгрейд</span>
         </button>
-        <button className={`tab-item ${activeTab === 'crafts' ? 'active' : ''}`} onClick={() => setActiveTab('crafts')}>
-          <span className="tab-icon">🎯</span><span>Крафты</span>
+        <button className={`nav-item ${activeTab === 'crafts' ? 'active' : ''}`} onClick={() => setActiveTab('crafts')}>
+          <span className="nav-icon">🎯</span>
+          <span className="nav-text">Крафты</span>
         </button>
-        <button className={`tab-item ${activeTab === 'cases' ? 'active' : ''}`} onClick={() => setActiveTab('cases')}>
-          <div className="center-cube-btn">📦</div>
-          <span style={{marginTop: '26px'}}>Кейсы</span>
+        
+        {/* КЕЙСЫ (АКТИВНЫЙ ЦЕНТР С КРУГОМ) */}
+        <button className={`nav-item ${activeTab === 'cases' ? 'active' : ''}`} onClick={() => setActiveTab('cases')}>
+          <div className="center-tab-glow">
+            <span className="nav-icon center-box">📦</span>
+          </div>
+          <span className="nav-text">Кейсы</span>
         </button>
-        <button className={`tab-item ${activeTab === 'contests' ? 'active' : ''}`} onClick={() => setActiveTab('contests')}>
-          <span className="tab-icon">🎁</span><span>Конкурсы</span>
+        
+        <button className={`nav-item ${activeTab === 'contests' ? 'active' : ''}`} onClick={() => setActiveTab('contests')}>
+          <span className="nav-icon">🎁</span>
+          <span className="nav-text">Конкурсы</span>
         </button>
-        <button className={`tab-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
-          <span className="tab-icon">🏆</span><span>Топ</span>
+        <button className={`nav-item ${activeTab === 'friends' ? 'active' : ''}`} onClick={() => setActiveTab('friends')}>
+          <span className="nav-icon">👥</span>
+          <span className="nav-text">Друзья</span>
         </button>
       </nav>
     </div>
