@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Список призов. Положи свои картинки в папку public/ под этими именами
+// Оригинальный список призов. Названия картинок должны совпадать с файлами в папке public/
 const PRIZES = [
   { id: 1, name: 'Кубок Лидера', value: 100, chance: 0.612, img: '/cup.png', color: '#ffb300' },
   { id: 2, name: 'Роза', value: 25, chance: 29.53, img: '/rose.png', color: '#ff2d55' },
@@ -12,7 +12,7 @@ const PRIZES = [
 export default function CasesPage({ balance, setBalance, openDepositModal, isDemo, setIsDemo }) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [carouselItems, setCarouselItems] = useState([]);
-  const [winningPrize, setWinningPrize] = useState(null); // Стейт для окна выигрыша
+  const [winningPrize, setWinningPrize] = useState(null);
   const currentPrice = 25;
   const carouselRef = useRef(null);
 
@@ -22,11 +22,14 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
 
   const generateItems = () => {
     const items = [];
+    // Наполняем ленту (70 элементов для долгой красивой прокрутки)
     for (let i = 0; i < 70; i++) {
       const randomPrize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
-      items.push({ ...randomPrize, uniqueId: i });
+      items.push({ ...randomPrize, uniqueId: `${i}-${Date.now()}` });
     }
     setCarouselItems(items);
+    
+    // Сброс позиции в 0
     if (carouselRef.current) {
       carouselRef.current.style.transition = 'none';
       carouselRef.current.style.transform = 'translateX(0px)';
@@ -35,64 +38,79 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
 
   const startSpin = () => {
     if (isSpinning) return;
-    setWinningPrize(null);
 
+    // Проверка баланса
     if (!isDemo && balance < currentPrice) {
       openDepositModal();
       return;
     }
 
+    setWinningPrize(null);
     setIsSpinning(true);
-    let winningIndex = 45; 
-    let finalWinner;
-    
-    if (isDemo) {
-      // НАКРУЧЕННЫЙ ШАНС ДЛЯ ДЕМО: выпадают только дорогие призы (Кубок, Торт, Шампань)
-      const luckyPrizes = PRIZES.filter(p => p.value >= 50);
-      finalWinner = luckyPrizes[Math.floor(Math.random() * luckyPrizes.length)];
-      carouselItems[winningIndex] = { ...finalWinner, uniqueId: 'won-demo' };
-    } else {
-      // РЕАЛЬНЫЙ РЕЖИМ: Расчет по точным процентам
-      setBalance(prev => prev - currentPrice);
-      const rand = Math.random() * 100;
-      let cumulative = 0;
-      finalWinner = PRIZES[PRIZES.length - 1];
-      
-      for (const prize of PRIZES) {
-        cumulative += prize.chance;
-        if (rand <= cumulative) {
-          finalWinner = prize;
-          break;
-        }
-      }
-      carouselItems[winningIndex] = { ...finalWinner, uniqueId: 'won-real' };
+
+    // Мгновенный сброс ленты перед новым стартом, чтобы можно было крутить повторно бесконечно
+    if (carouselRef.current) {
+      carouselRef.current.style.transition = 'none';
+      carouselRef.current.style.transform = 'translateX(0px)';
     }
 
-    const cardWidth = 110;
-    const gap = 12;
-    const itemWidth = cardWidth + gap;
-    const offset = -(winningIndex * itemWidth - itemWidth);
-
+    // Микро-таймаут для сброса анимации в браузере
     setTimeout(() => {
+      let winningIndex = 45; // Предмет, который остановится по центру под стрелочками
+      let finalWinner;
+
+      if (isDemo) {
+        // Подкрученный шанс для демо-режима (выбираем дорогие призы)
+        const luckyPrizes = PRIZES.filter(p => p.value >= 50);
+        finalWinner = luckyPrizes[Math.floor(Math.random() * luckyPrizes.length)];
+      } else {
+        // Честный рандом по процентам
+        setBalance(prev => prev - currentPrice);
+        const rand = Math.random() * 100;
+        let cumulative = 0;
+        finalWinner = PRIZES[PRIZES.length - 1];
+
+        for (const prize of PRIZES) {
+          cumulative += prize.chance;
+          if (rand <= cumulative) {
+            finalWinner = prize;
+            break;
+          }
+        }
+      }
+
+      // Внедряем победителя на 45-ю позицию в карусели
+      setCarouselItems(prev => {
+        const updated = [...prev];
+        updated[winningIndex] = { ...finalWinner, uniqueId: `winner-${Date.now()}` };
+        return updated;
+      });
+
+      // Расчет точного сдвига (ширина карточки 110px + отступ 12px)
+      const cardWidth = 110;
+      const gap = 12;
+      const itemWidth = cardWidth + gap;
+      const offset = -(winningIndex * itemWidth - itemWidth);
+
       if (carouselRef.current) {
         carouselRef.current.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)';
         carouselRef.current.style.transform = `translateX(${offset}px)`;
       }
-    }, 50);
 
-    // Появление анимации выигрыша по окончании кручения
-    setTimeout(() => {
-      if (!isDemo) {
-        setBalance(prev => prev + finalWinner.value);
-      }
-      setWinningPrize(finalWinner);
-      setIsSpinning(false);
-    }, 4200);
+      // Окончание анимации вращения
+      setTimeout(() => {
+        if (!isDemo) {
+          setBalance(prev => prev + finalWinner.value);
+        }
+        setWinningPrize(finalWinner);
+        setIsSpinning(false);
+      }, 4200);
+    }, 50);
   };
 
   return (
     <div className="cases-container">
-      {/* РУЛЕТКА */}
+      {/* ЛЕНТА РУЛЕТКИ */}
       <div className="roulette-box">
         <div className="arrow-marker top-arrow"></div>
         <div className="arrow-marker bottom-arrow"></div>
@@ -100,7 +118,10 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
           <div className="roulette-track" ref={carouselRef}>
             {carouselItems.map((item) => (
               <div key={item.uniqueId} className="roulette-card">
-                <img src={item.img} alt={item.name} className="roulette-prize-img" />
+                <div className="image-wrapper">
+                  <img src={item.img} alt={item.name} className="roulette-prize-img" onError={(e) => e.target.style.display = 'none'} />
+                  <span className="fallback-text">{item.name}</span>
+                </div>
                 <div className="item-badge-value">
                   {item.value} <span className="small-star">★</span>
                 </div>
@@ -110,7 +131,7 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
         </div>
       </div>
 
-      {/* ДЕМО РЕЖИМ */}
+      {/* ПЕРЕКЛЮЧАТЕЛЬ ДЕМО */}
       <div className="demo-panel">
         <span className="demo-label">Демо режим</span>
         <label className="tg-switch">
@@ -127,7 +148,7 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
         </label>
       </div>
 
-      {/* КНОПКА КЕЙСА ВДОЛЬ ВСЕГО ЭКРАНА */}
+      {/* ГЛАВНАЯ КНОПКА ВО ВЕСЬ ЭКРАН */}
       <div className="btn-wrapper">
         <button 
           className={`tg-main-button ${isSpinning ? 'spinning' : ''}`} 
@@ -138,7 +159,7 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
         </button>
       </div>
 
-      {/* СЕТКА ПРИЗОВ */}
+      {/* СЕТКА ШАНСОВ ПРИЗОВ */}
       <div className="loot-preview-section">
         <div className="preview-title">
           Вы можете выиграть... <span className="nft-link">NFT?</span>
@@ -147,7 +168,10 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
           {PRIZES.map((prize) => (
             <div key={prize.id} className="preview-card">
               <div className="preview-chance">{prize.chance}% 🎲</div>
-              <img src={prize.img} alt={prize.name} className="grid-prize-img" />
+              <div className="grid-image-wrapper">
+                <img src={prize.img} alt={prize.name} className="grid-prize-img" onError={(e) => e.target.style.display = 'none'} />
+                <span className="fallback-grid-text">{prize.name}</span>
+              </div>
               <div className="preview-value">
                 {prize.value} <span className="gold-star">★</span>
               </div>
@@ -156,14 +180,14 @@ export default function CasesPage({ balance, setBalance, openDepositModal, isDem
         </div>
       </div>
 
-      {/* ОКНО ВСПЛЫВАЮЩЕЙ АНИМАЦИИ ВЫИГРЫША */}
+      {/* ОКНО АНИМАЦИИ И РЕЗУЛЬТАТА ВЫИГРЫША */}
       {winningPrize && (
         <div className="win-overlay" onClick={() => setWinningPrize(null)}>
           <div className="win-popup-card" onClick={(e) => e.stopPropagation()} style={{'--shadow-color': winningPrize.color}}>
             <div className="win-glow-effect"></div>
             <span className="win-title">ПОЗДРАВЛЯЕМ!</span>
             <p className="win-subtitle">Вы выиграли предмет:</p>
-            <img src={winningPrize.img} alt={winningPrize.name} className="win-animated-img" />
+            <img src={winningPrize.img} alt={winningPrize.name} className="win-animated-img" onError={(e) => e.target.style.opacity = '0.3'} />
             <h2 className="win-item-name">{winningPrize.name}</h2>
             <div className="win-reward-badge">+{winningPrize.value} ⭐ зачислено</div>
             <button className="win-close-btn" onClick={() => setWinningPrize(null)}>Отлично</button>
