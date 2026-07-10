@@ -5,15 +5,14 @@ import ContestsPage from './pages/ContestsPage';
 import LeadersPage from './pages/LeadersPage';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('cases'); // 'upgrade', 'crafts', 'cases', 'contests', 'friends'
+  const [activeTab, setActiveTab] = useState('cases');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState({
-    username: 'Загрузка...',
-    id: '7207936626',
-    balance: 42,
-    tickets: 10,
-    avatar: ''
-  });
+  
+  // Живой динамический баланс пользователя (сделаем стартовый 500 для тестов)
+  const [balance, setBalance] = useState(500);
+  const [tickets, setTickets] = useState(10);
+  const [username, setUsername] = useState('ukrop');
+  const [avatar, setAvatar] = useState('');
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -23,13 +22,8 @@ export default function App() {
       
       if (tg.initDataUnsafe?.user) {
         const u = tg.initDataUnsafe.user;
-        setUser({
-          username: u.username || u.first_name || 'ukrop',
-          id: u.id || '7207936626',
-          balance: 0, 
-          tickets: 10,
-          avatar: u.photo_url || ''
-        });
+        setUsername(u.username || u.first_name || 'ukrop');
+        setAvatar(u.photo_url || '');
       }
     }
   }, []);
@@ -40,16 +34,16 @@ export default function App() {
       <header className="main-header">
         <div className="header-left" onClick={() => setIsMenuOpen(true)}>
           <div className="burger-icon"><span></span><span></span><span></span></div>
-          <div className="brand-logo"><span>🐸</span> Bonzana</div>
+          <div className="brand-logo"><span>🐸</span> GB</div>
         </div>
         <div className="header-right">
           <div className="stars-pill">
             <span className="star-icon">⭐</span>
-            <span className="balance-num">{user.balance}</span>
+            <span className="balance-num">{balance}</span>
             <button className="plus-btn">+</button>
           </div>
           <div className="avatar-box">
-            {user.avatar ? <img src={user.avatar} alt="avatar" /> : user.username[0].toUpperCase()}
+            {avatar ? <img src={avatar} alt="avatar" /> : username[0]?.toUpperCase()}
           </div>
         </div>
       </header>
@@ -60,18 +54,18 @@ export default function App() {
         <div className="drawer-content">
           <div className="drawer-profile">
             <div className="drawer-avatar">
-              {user.avatar ? <img src={user.avatar} alt="avatar" /> : user.username[0].toUpperCase()}
+              {avatar ? <img src={avatar} alt="avatar" /> : username[0]?.toUpperCase()}
             </div>
             <div>
-              <h3>{user.username}</h3>
-              <p>ID: {user.id}</p>
+              <h3>{username}</h3>
+              <p>ID: 7207936626</p>
             </div>
           </div>
           <div className="drawer-balance-card">
             <p>Мой баланс</p>
             <div className="balances-row">
-              <div>⭐ {user.balance}</div>
-              <div style={{color: '#8e99b3'}}>🎟️ {user.tickets}</div>
+              <div>⭐ {balance}</div>
+              <div style={{color: '#8e99b3'}}>🎟️ {tickets}</div>
             </div>
             <button className="deposit-btn">Пополнить</button>
           </div>
@@ -87,7 +81,9 @@ export default function App() {
 
       {/* КОНТЕНТ СТРАНИЦ */}
       <main className="main-content">
-        {activeTab === 'cases' && <CasesPage />}
+        {activeTab === 'cases' && (
+          <CasesPage balance={balance} setBalance={setBalance} />
+        )}
         {activeTab === 'contests' && <ContestsPage />}
         {activeTab === 'leaderboard' && <LeadersPage />}
         {(activeTab === 'upgrade' || activeTab === 'crafts') && (
