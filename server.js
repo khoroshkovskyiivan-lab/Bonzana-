@@ -43,7 +43,7 @@ app.post('/api/auth', (req, res) => {
 });
 
 // Отдаем index.html на любые другие роуты для SPA
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
