@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CasesPage.css';
 
-// Данные о доступных кейсах / категориях
 const CATEGORIES = [
   { id: 'all', name: 'Все 25', price: 25 },
   { id: 'bears', name: 'Медвежата 33', price: 33 },
   { id: 'romance', name: 'Романтика 42', price: 42 }
 ];
 
-// Возможные призы внутри кейса (иконка, название, стоимость в Stars, шанс в %)
 const PRIZES = [
   { id: 1, name: 'Кубок Лидера', icon: '🏆', value: 100, chance: 0.612 },
   { id: 2, name: 'Роза', icon: '🌹', value: 25, chance: 29.53 },
@@ -17,7 +15,7 @@ const PRIZES = [
   { id: 5, name: 'Шампанское', icon: '🍾', value: 50, chance: 19.576 }
 ];
 
-export default function CasesPage() {
+export default function CasesPage({ balance, setBalance }) {
   const [activeTab, setActiveTab] = useState('all');
   const [isDemo, setIsDemo] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -26,13 +24,11 @@ export default function CasesPage() {
   
   const carouselRef = useRef(null);
 
-  // Генерируем длинную ленту для эффекта бесконечной прокрутки рулетки
   useEffect(() => {
     generateCarousel();
   }, []);
 
   const generateCarousel = () => {
-    // Создаем массив из 50 случайных предметов, чтобы рулетка долго крутилась
     const items = [];
     for (let i = 0; i < 60; i++) {
       const randomPrize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
@@ -52,37 +48,47 @@ export default function CasesPage() {
 
   const startSpin = () => {
     if (isSpinning) return;
+
+    // Проверка баланса: если НЕ демо режим, проверяем хватает ли звезд
+    if (!isDemo && balance < currentPrice) {
+      alert('❌ Недостаточно Telegram Stars для открытия кейса!');
+      return;
+    }
     
     setIsSpinning(true);
     generateCarousel();
 
-    // Выбираем случайный финальный индекс (ближе к концу ленты, например между 45 и 52)
-    const winningIndex = 45 + Math.floor(Math.random() * 7);
+    // Списываем баланс только если режим НЕ демонстрационный
+    if (!isDemo) {
+      setBalance(prev => prev - currentPrice);
+    }
+
+    const winningIndex = 42; // Жестко фиксируем индекс остановки для идеального прицела
     
-    // Вычисляем смещение: ширина одной карточки 110px (100px + 10px отступ)
-    // Центрируем выигрышную карточку относительно середины экрана рулетки
-    const cardWidth = 110;
-    const containerWidth = 320; // Примерная ширина видимой зоны
-    const targetOffset = -(winningIndex * cardWidth - (containerWidth / 2) + (cardWidth / 2));
+    // Вычисляем точное смещение с учетом ширины карточки (100px) и отступа gap (10px)
+    const cardWidth = 100;
+    const gap = 10;
+    const itemTotalWidth = cardWidth + gap;
+    
+    // Смещение контейнера, чтобы 42-й элемент встал ровно по центру маркера
+    const targetOffset = -(winningIndex * itemTotalWidth - 110); 
 
     setTimeout(() => {
       if (carouselRef.current) {
-        carouselRef.current.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)';
+        carouselRef.current.style.transition = 'transform 4.5s cubic-bezier(0.1, 0.8, 0.1, 1)';
         carouselRef.current.style.transform = `translateX(${targetOffset}px)`;
       }
     }, 50);
 
-    // Конец анимации кручения
     setTimeout(() => {
       const wonPrize = carouselItems[winningIndex];
       alert(`🎉 Вы выиграли: ${wonPrize.name} (${wonPrize.value} ⭐️)!`);
       setIsSpinning(false);
-    }, 4100);
+    }, 4600);
   };
 
   return (
     <div className="cases-page">
-      {/* Шапка с категориями */}
       <div className="tabs-container">
         {CATEGORIES.map((tab) => (
           <button
@@ -95,7 +101,6 @@ export default function CasesPage() {
         ))}
       </div>
 
-      {/* Окно самой рулетки */}
       <div className="roulette-wrapper">
         <div className="roulette-marker top"></div>
         <div className="roulette-marker bottom"></div>
@@ -111,7 +116,6 @@ export default function CasesPage() {
         </div>
       </div>
 
-      {/* Переключатель Демо-режима */}
       <div className="demo-toggle-container">
         <span className="demo-text">Демо режим</span>
         <label className="switch">
@@ -124,7 +128,6 @@ export default function CasesPage() {
         </label>
       </div>
 
-      {/* Главная кнопка действия */}
       <button 
         className={`action-btn ${isSpinning ? 'disabled' : ''}`} 
         onClick={startSpin}
@@ -133,7 +136,6 @@ export default function CasesPage() {
         {isSpinning ? 'Удача решает...' : `Мне повезет! ${currentPrice}`} <span>⭐️</span>
       </button>
 
-      {/* Раздел "Вы можете выиграть..." */}
       <div className="lootbox-info-section">
         <div className="info-header">
           <h3>Вы можете выиграть...</h3>
