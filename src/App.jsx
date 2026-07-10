@@ -7,8 +7,8 @@ import LeadersPage from './pages/LeadersPage';
 export default function App() {
   const [activeTab, setActiveTab] = useState('cases');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false); // Окно пополнения
   
-  // Живой динамический баланс пользователя (сделаем стартовый 500 для тестов)
   const [balance, setBalance] = useState(500);
   const [tickets, setTickets] = useState(10);
   const [username, setUsername] = useState('ukrop');
@@ -34,10 +34,13 @@ export default function App() {
       <header className="main-header">
         <div className="header-left" onClick={() => setIsMenuOpen(true)}>
           <div className="burger-icon"><span></span><span></span><span></span></div>
-          <div className="brand-logo"><span>🐸</span> GB</div>
+          {/* Логотип Bonzana вместо жабы */}
+          <div className="brand-logo">
+            <span className="logo-box-icon">🎁</span> BONZANA
+          </div>
         </div>
         <div className="header-right">
-          <div className="stars-pill">
+          <div className="stars-pill" onClick={() => setIsDepositOpen(true)}>
             <span className="star-icon">⭐</span>
             <span className="balance-num">{balance}</span>
             <button className="plus-btn">+</button>
@@ -67,17 +70,45 @@ export default function App() {
               <div>⭐ {balance}</div>
               <div style={{color: '#8e99b3'}}>🎟️ {tickets}</div>
             </div>
-            <button className="deposit-btn">Пополнить</button>
+            <button className="deposit-btn" onClick={() => { setIsDepositOpen(true); setIsMenuOpen(false); }}>Пополнить</button>
           </div>
           <nav className="drawer-nav">
             <button onClick={() => { setActiveTab('leaderboard'); setIsMenuOpen(false); }}>👤 Мой профиль</button>
             <button onClick={() => alert('В разработке')}>🔄 Live-трейды</button>
-            <button onClick={() => alert('Пополнение Stars')}>⭐ Купить Stars</button>
+            <button onClick={() => { setIsDepositOpen(true); setIsMenuOpen(false); }}>⭐ Купить Stars</button>
             <button onClick={() => { setActiveTab('leaderboard'); setIsMenuOpen(false); }}>🏆 Лидерборд</button>
           </nav>
           <div className="drawer-footer">🎧 Поддержка</div>
         </div>
       </div>
+
+      {/* ОКНО ПОПОЛНЕНИЯ БАЛАНСА */}
+      {isDepositOpen && (
+        <div className="modal-overlay" onClick={() => setIsDepositOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Пополнение Telegram Stars</h3>
+              <button className="close-modal-btn" onClick={() => setIsDepositOpen(false)}>×</button>
+            </div>
+            <p className="modal-desc">Выберите пакет звёзд для мгновенного зачисления на игровой баланс:</p>
+            <div className="deposit-grid">
+              <div className="deposit-tier" onClick={() => { setBalance(b => b + 50); setIsDepositOpen(false); }}>
+                <span className="tier-stars">⭐ 50</span>
+                <button className="tier-buy-btn">0.99$</button>
+              </div>
+              <div className="deposit-tier popular" onClick={() => { setBalance(b => b + 250); setIsDepositOpen(false); }}>
+                <div className="badge">ХИТ</div>
+                <span className="tier-stars">⭐ 250</span>
+                <button className="tier-buy-btn">4.99$</button>
+              </div>
+              <div className="deposit-tier" onClick={() => { setBalance(b => b + 1000); setIsDepositOpen(false); }}>
+                <span className="tier-stars">⭐ 1000</span>
+                <button className="tier-buy-btn">19.99$</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* КОНТЕНТ СТРАНИЦ */}
       <main className="main-content">
@@ -94,7 +125,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ТАБ-БАР */}
+      {/* ТАБ-БАР (Друзья изменены на Топ) */}
       <nav className="bottom-tabbar">
         <button className={`tab-item ${activeTab === 'upgrade' ? 'active' : ''}`} onClick={() => setActiveTab('upgrade')}>
           <span className="tab-icon">▲</span><span>Апгрейд</span>
@@ -110,7 +141,7 @@ export default function App() {
           <span className="tab-icon">🎁</span><span>Конкурсы</span>
         </button>
         <button className={`tab-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
-          <span className="tab-icon">👥</span><span>Друзья</span>
+          <span className="tab-icon">🏆</span><span>Топ</span>
         </button>
       </nav>
     </div>
