@@ -26,7 +26,7 @@ export default function App() {
         setUser({
           username: u.username || u.first_name || 'ukrop',
           id: u.id || '7207936626',
-          balance: 42, 
+          balance: 0, 
           tickets: 10,
           avatar: u.photo_url || ''
         });
@@ -40,7 +40,7 @@ export default function App() {
       <header className="main-header">
         <div className="header-left" onClick={() => setIsMenuOpen(true)}>
           <div className="burger-icon"><span></span><span></span><span></span></div>
-          <div className="brand-logo"><span>🐸</span> GB</div>
+          <div className="brand-logo"><span>🐸</span> Bonzana</div>
         </div>
         <div className="header-right">
           <div className="stars-pill">
