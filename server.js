@@ -1,50 +1,46 @@
 const express = require('express');
-const crypto = require('crypto');
 const axios = require('axios');
-const path = require('path');
-require('dotenv').config();
+const cors = require('cors');
 
 const app = express();
 app.use(express.json());
+app.use(cors()); // Чтобы фронтенд мог без проблем отправлять запросы
 
-// Отдаем собранный фронтенд из статики (когда сделаешь npm run build)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Твой токен бота уже внутри безопасности бэкенда
+const BOT_TOKEN = '8722270191:AAGT76B9uFwEt0_a26AE3C2A7mfjFKI0b1M'; 
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const usersDB = {};
+app.post('/api/create-stars-invoice', async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
 
-function verifyTelegramData(initData) {
-    if (!initData) return false;
-    const urlParams = new URLSearchParams(initData);
-    const hash = urlParams.get('hash');
-    urlParams.delete('hash');
-    const dataCheckString = Array.from(urlParams.entries()).map(([key, value]) => `${key}=${value}`).sort().join('\n');
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-    const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-    return calculatedHash === hash;
-}
-
-app.post('/api/auth', (req, res) => {
-    if (!verifyTelegramData(req.body.initData)) return res.status(401).json({ error: 'Auth failed' });
-    const urlParams = new URLSearchParams(req.body.initData);
-    const tgUser = JSON.parse(urlParams.get('user'));
-    
-    if (!usersDB[tgUser.id]) {
-        usersDB[tgUser.id] = { balance: 42, tickets: 10 };
+    if (!amount) {
+      return res.status(400).json({ success: false, error: "Не указана сумма звезд" });
     }
-    res.json({
-        success: true,
-        id: tgUser.id,
-        username: tgUser.username || tgUser.first_name || 'Player',
-        avatar: tgUser.photo_url || '',
-        balance: usersDB[tgUser.id].balance,
-        tickets: usersDB[tgUser.id].tickets
+
+    // Запрос к Telegram API для создания нативной ссылки на оплату Stars
+    const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
+      title: "Пополнение Stars",
+      description: `Покупка ${amount} Telegram Stars для профиля в Gifts Battle`,
+      payload: `stars_deposit_${userId || 'guest'}_${Date.now()}`,
+      provider_token: "", // Для Telegram Stars поле ВСЕГДА остается пустым
+      currency: "XTR",    // XTR — это единственно верный код для Telegram Stars
+      prices: [
+        { label: "Telegram Stars", amount: parseInt(amount) }
+      ]
     });
+
+    if (response.data.ok) {
+      // Отправляем готовую инвойс-ссылку на фронтенд
+      res.json({ success: true, invoiceLink: response.data.result });
+    } else {
+      res.status(400).json({ success: false, error: response.data.description });
+    }
+  } catch (error) {
+    console.error("Ошибка при создании инвойса:", error.response ? error.response.data : error.message);
+    res.status(500).json({ success: false, error: "Внутренняя ошибка сервера платежей" });
+  }
 });
 
-// Используем регулярное выражение напрямую — это 100% рабочее решение для Express 5
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-app.listen(3000, () => console.log('API запущен на порту 3000'));
+// Запускаем сервер на 3000 порту (или используй свой привычный порт)
+const PORT = 3000;
+app.listen(PORT, () => console.log(`🚀 Бэкенд платежей запущен на порту ${PORT}`));
