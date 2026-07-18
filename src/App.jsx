@@ -26,7 +26,7 @@ export default function App() {
 
     try {
       // Стучимся на наш созданный Node.js бэкенд
-      const response = await fetch('http://localhost:3000/api/create-stars-invoice', {
+      const response = await fetch('https://bonzana.onrender.com/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
