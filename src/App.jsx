@@ -7,26 +7,28 @@ export default function App() {
   const [balance, setBalance] = useState(0); 
   const [isDemo, setIsDemo] = useState(false);
 
+  // Инициализация Telegram Mini App при загрузке приложения
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
+      window.Telegram.WebApp.expand(); // Раскрываем приложение на максимум
     }
   }, []);
 
-  // Нативный вызов Telegram Stars с интеграцией бэкенда
+  // Нативный вызов Telegram Stars с интеграцией твоего Render-бэкенда
   const handleStarsPayment = async (starsCount) => {
-    setIsDepositOpen(false);
+    setIsDepositOpen(false); // Закрываем модалку перед вызовом оплаты
     
+    // Проверка, что приложение открыто именно внутри Telegram
     if (!window.Telegram || !window.Telegram.WebApp) {
-      alert(`Среда Telegram не найдена. Локальный тест: Начислено +${starsCount} звёзд`);
+      alert(`Среда Telegram не найдена. Локальный тест: баланс увеличен на +${starsCount} ⭐`);
       setBalance(prev => prev + starsCount);
       return;
     }
 
     try {
-      // Стучимся на наш созданный Node.js бэкенд
-      const response = await fetch('https://bonzana.onrender.com/', {
+      // Стучимся на твой реальный сервер Render по правильному эндпоинту
+      const response = await fetch('https://bonzana.onrender.com/api/create-stars-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -38,28 +40,29 @@ export default function App() {
       const data = await response.json();
       
       if (data.success && data.invoiceLink) {
-        // Запуск официальной шторки оплаты внутри Telegram
+        // Открываем нативную шторку оплаты Telegram Stars
         window.Telegram.WebApp.openInvoice(data.invoiceLink, (status) => {
           if (status === 'paid') {
             setBalance(prev => prev + starsCount);
-            window.Telegram.WebApp.showAlert(`Баланс успешно пополнен на ${starsCount} ⭐!`);
+            window.Telegram.WebApp.showAlert(`Успешно! Зачислено ${starsCount} ⭐!`);
           } else if (status === 'cancelled') {
-            console.log('Пользователь закрыл инвойс');
+            console.log('Пользователь отменил платеж');
           } else {
-            window.Telegram.WebApp.showAlert('Ошибка проведения транзакции.');
+            window.Telegram.WebApp.showAlert('Не удалось провести платеж.');
           }
         });
       } else {
-        window.Telegram.WebApp.showAlert('Не удалось сгенерировать чек оплаты.');
+        window.Telegram.WebApp.showAlert('Ошибка: Сервер не смог выписать чек.');
       }
     } catch (err) {
       console.error('Ошибка платежной системы:', err);
-      window.Telegram.WebApp.showAlert('Ошибка связи с сервером платежей.');
+      window.Telegram.WebApp.showAlert('Нет связи с сервером платежей.');
     }
   };
 
   return (
     <div className="app-shell">
+      {/* Стеклянная шапка (Неоновый дизайн) */}
       <header className="tg-header glass-panel">
         <span className="brand-title neon-text-cyan">BONZANA</span>
         <div className="balance-pill" onClick={() => setIsDepositOpen(true)}>
@@ -69,6 +72,7 @@ export default function App() {
         </div>
       </header>
 
+      {/* Основная рабочая зона с рулеткой кейсов */}
       <main className="content-area">
         <CasesPage 
           balance={balance} 
@@ -79,8 +83,11 @@ export default function App() {
         />
       </main>
 
-      {/* Стеклянное модальное окно (Bottom Sheet) пополнения */}
-      <div className={`bottom-sheet-overlay ${isDepositOpen ? 'visible' : ''}`} onClick={() => setIsDepositOpen(false)}>
+      {/* Стеклянное модальное окно (Bottom Sheet) для выбора тарифа Stars */}
+      <div 
+        className={`bottom-sheet-overlay ${isDepositOpen ? 'visible' : ''}`} 
+        onClick={() => setIsDepositOpen(false)}
+      >
         <div className="bottom-sheet-modal glass-panel" onClick={(e) => e.stopPropagation()}>
           <div className="sheet-header">
             <h3 className="neon-text-cyan">Пополнение Telegram Stars</h3>
@@ -93,11 +100,13 @@ export default function App() {
               <span>⭐ 50 Stars</span>
               <button className="tier-price-btn">Купить</button>
             </div>
+            
             <div className="tier-row glass-element popular-row" onClick={() => handleStarsPayment(250)}>
               <div className="hit-badge">ХИТ</div>
               <span>⭐ 250 Stars</span>
               <button className="tier-price-btn">Купить</button>
             </div>
+            
             <div className="tier-row glass-element" onClick={() => handleStarsPayment(1000)}>
               <span>⭐ 1000 Stars</span>
               <button className="tier-price-btn">Купить</button>
