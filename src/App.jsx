@@ -14,68 +14,61 @@ export default function App() {
     }
   }, []);
 
-  // Нативная функция оплаты реальными Telegram Stars
+  // Нативный вызов Telegram Stars с интеграцией бэкенда
   const handleStarsPayment = async (starsCount) => {
     setIsDepositOpen(false);
     
     if (!window.Telegram || !window.Telegram.WebApp) {
-      // Резервный тест для браузера ПК вне Телеграма
-      alert(`Среда Telegram не найдена. Тестовое начисление: +${starsCount} звёзд`);
+      alert(`Среда Telegram не найдена. Локальный тест: Начислено +${starsCount} звёзд`);
       setBalance(prev => prev + starsCount);
       return;
     }
 
     try {
-      // Запрос к твоему бэкенду (server.js) за ссылкой на инвойс Telegram Stars
-      const response = await fetch('/api/create-stars-invoice', {
+      // Стучимся на наш созданный Node.js бэкенд
+      const response = await fetch('http://localhost:3000/api/create-stars-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          userId: window.Telegram.WebApp.initDataUnsafe?.user?.id,
+          userId: window.Telegram.WebApp.initDataUnsafe?.user?.id || 0,
           amount: starsCount 
         })
       });
       
       const data = await response.json();
       
-      if (data.invoiceLink) {
-        // Вызов официального окна оплаты Telegram Stars внутри приложения
+      if (data.success && data.invoiceLink) {
+        // Запуск официальной шторки оплаты внутри Telegram
         window.Telegram.WebApp.openInvoice(data.invoiceLink, (status) => {
           if (status === 'paid') {
             setBalance(prev => prev + starsCount);
-            window.Telegram.WebApp.showAlert(`Успешно! Ваш баланс пополнен на ${starsCount} ⭐`);
+            window.Telegram.WebApp.showAlert(`Баланс успешно пополнен на ${starsCount} ⭐!`);
           } else if (status === 'cancelled') {
-            console.log('Пользователь закрыл окно оплаты звезд.');
+            console.log('Пользователь закрыл инвойс');
           } else {
-            window.Telegram.WebApp.showAlert('Ошибка проведения транзакции Telegram Stars.');
+            window.Telegram.WebApp.showAlert('Ошибка проведения транзакции.');
           }
         });
       } else {
-        window.Telegram.WebApp.showAlert('Ошибка: Сервер не смог создать инвойс.');
+        window.Telegram.WebApp.showAlert('Не удалось сгенерировать чек оплаты.');
       }
     } catch (err) {
       console.error('Ошибка платежной системы:', err);
+      window.Telegram.WebApp.showAlert('Ошибка связи с сервером платежей.');
     }
   };
 
   return (
     <div className="app-shell">
-      {/* ХЕДЕР ПРИЛОЖЕНИЯ */}
-      <header className="tg-header">
-        <div className="header-left-brand">
-          <div className="burger-btn"><span></span><span></span><span></span></div>
-          <span className="brand-title">BONZANA</span>
-        </div>
-        <div className="header-right-wallet">
-          <div className="balance-pill" onClick={() => setIsDepositOpen(true)}>
-            <span className="pill-star">★</span>
-            <span className="pill-amount">{isDemo ? '9999' : balance}</span>
-            <span className="pill-plus">+</span>
-          </div>
+      <header className="tg-header glass-panel">
+        <span className="brand-title neon-text-cyan">BONZANA</span>
+        <div className="balance-pill" onClick={() => setIsDepositOpen(true)}>
+          <span className="pill-star">★</span>
+          <span className="pill-amount">{isDemo ? '9999' : balance}</span>
+          <span className="pill-plus">+</span>
         </div>
       </header>
 
-      {/* КОНТЕНТНАЯ ЧАСТЬ */}
       <main className="content-area">
         <CasesPage 
           balance={balance} 
@@ -86,55 +79,32 @@ export default function App() {
         />
       </main>
 
-      {/* МОДАЛЬНОЕ ОКНО (BOTTOM SHEET ПОПОЛНЕНИЯ ЗВЕЗД) */}
+      {/* Стеклянное модальное окно (Bottom Sheet) пополнения */}
       <div className={`bottom-sheet-overlay ${isDepositOpen ? 'visible' : ''}`} onClick={() => setIsDepositOpen(false)}>
-        <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bottom-sheet-modal glass-panel" onClick={(e) => e.stopPropagation()}>
           <div className="sheet-header">
-            <h3>Пополнение Telegram Stars</h3>
+            <h3 className="neon-text-cyan">Пополнение Telegram Stars</h3>
             <button className="sheet-close-x" onClick={() => setIsDepositOpen(false)}>×</button>
           </div>
-          <p className="sheet-subtitle">Купите звёзды через Telegram для мгновенного зачисления на игровой баланс:</p>
+          <p className="sheet-subtitle">Официальное зачисление игровой валюты:</p>
 
           <div className="tiers-list">
-            <div className="tier-row" onClick={() => handleStarsPayment(50)}>
-              <div className="tier-info">
-                <span className="tier-star-icon">⭐</span>
-                <span className="tier-quantity">50 Stars</span>
-              </div>
-              <button className="tier-price-btn">⭐ 50</button>
+            <div className="tier-row glass-element" onClick={() => handleStarsPayment(50)}>
+              <span>⭐ 50 Stars</span>
+              <button className="tier-price-btn">Купить</button>
             </div>
-
-            <div className="tier-row popular-row" onClick={() => handleStarsPayment(250)}>
+            <div className="tier-row glass-element popular-row" onClick={() => handleStarsPayment(250)}>
               <div className="hit-badge">ХИТ</div>
-              <div className="tier-info">
-                <span className="tier-star-icon">⭐</span>
-                <span className="tier-quantity">250 Stars</span>
-              </div>
-              <button className="tier-price-btn">⭐ 250</button>
+              <span>⭐ 250 Stars</span>
+              <button className="tier-price-btn">Купить</button>
             </div>
-
-            <div className="tier-row" onClick={() => handleStarsPayment(1000)}>
-              <div className="tier-info">
-                <span className="tier-star-icon">⭐</span>
-                <span className="tier-quantity">1000 Stars</span>
-              </div>
-              <button className="tier-price-btn">⭐ 1000</button>
+            <div className="tier-row glass-element" onClick={() => handleStarsPayment(1000)}>
+              <span>⭐ 1000 Stars</span>
+              <button className="tier-price-btn">Купить</button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* НИЖНЕЕ МЕНЮ НАВИГАЦИИ */}
-      <nav className="tg-navbar">
-        <button className="nav-item"><span className="nav-icon">▲</span><span className="nav-text">Апгрейд</span></button>
-        <button className="nav-item"><span className="nav-icon">🎯</span><span className="nav-text">Крафты</span></button>
-        <button className="nav-item active">
-          <div className="center-tab-glow"><span className="nav-icon center-box">📦</span></div>
-          <span className="nav-text">Кейсы</span>
-        </button>
-        <button className="nav-item"><span className="nav-icon">🎁</span><span className="nav-text">Конкурсы</span></button>
-        <button className="nav-item"><span className="nav-icon">👥</span><span className="nav-text">Друзья</span></button>
-      </nav>
     </div>
   );
 }
